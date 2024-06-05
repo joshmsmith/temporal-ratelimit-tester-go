@@ -58,7 +58,7 @@ func main() {
 			Bucket: bucket,
 			GreetingKey: "key-" + fmt.Sprint(i),
 		}
-		//time.Sleep(5 * time.Millisecond)
+		//time.Sleep(5 * time.Millisecond) // if you want to add some delay
 
 		workflowId = WorkflowIDPrefix + "-" + bucket
 		workflowOptions = client.StartWorkflowOptions{

@@ -86,27 +86,6 @@ type AccumulateGreeting struct {
 [ ] update readme
 */
 
-// Listen to signals - greetings and exit
-func Listen(ctx workflow.Context, a AccumulateGreeting, ExitRequested bool, FirstSignalTime time.Time) {
-	log := workflow.GetLogger(ctx)
-	for {
-		selector := workflow.NewSelector(ctx)
-		selector.AddReceive(workflow.GetSignalChannel(ctx, "greeting"), func(c workflow.ReceiveChannel, more bool) {
-			c.Receive(ctx, &a)
-			log.Info("Signal Received")
-		})
-		selector.AddReceive(workflow.GetSignalChannel(ctx, "exit"), func(c workflow.ReceiveChannel, more bool) {
-			c.Receive(ctx, nil)
-			ExitRequested = true
-			log.Info("Exit Signal Received")
-		})
-		selector.Select(ctx)
-		if FirstSignalTime.IsZero() {
-			FirstSignalTime = workflow.Now(ctx)
-		}
-	}
-}
-
 // GetNextTimeout returns the maximum time allowed to wait for the next signal.
 func (a *AccumulateGreeting) GetNextTimeout(ctx workflow.Context, timeToExit bool, firstSignalTime time.Time ) (time.Duration, error) {
 	if firstSignalTime.IsZero() {
@@ -149,7 +128,7 @@ func AccumulateSignalsWorkflow(ctx workflow.Context, bucketKey string) (allGreet
 	}
 
 	queryResult = "about to wait for signals"
-	//printGreetings(greetings)
+
 	// Listen to signals in a different goroutine
 	workflow.Go(ctx, func(gCtx workflow.Context) {
 		for {
@@ -159,7 +138,6 @@ func AccumulateSignalsWorkflow(ctx workflow.Context, bucketKey string) (allGreet
 				c.Receive(gCtx, &a)
 				unprocessedGreetings = append(unprocessedGreetings, a)
 				log.Info("Signal Received with text: " + a.GreetingText + ", more: " + strconv.FormatBool(more) + "\n")
-				// initialize a
 				a = AccumulateGreeting{} 
 			})
 			selector.AddReceive(workflow.GetSignalChannel(gCtx, "exit"), func(c workflow.ReceiveChannel, more bool) {
@@ -167,9 +145,7 @@ func AccumulateSignalsWorkflow(ctx workflow.Context, bucketKey string) (allGreet
 				ExitRequested = true
 				log.Info("Exit Signal Received\n")
 			})
-			//log.Info("before select, greeting  text: " + a.GreetingText + "\n")
 			selector.Select(gCtx)
-			//log.Info("after select, greeting  text: " + a.GreetingText + "\n")
 			if FirstSignalTime.IsZero() {
 				FirstSignalTime = workflow.Now(gCtx)
 			}
@@ -189,22 +165,18 @@ func AccumulateSignalsWorkflow(ctx workflow.Context, bucketKey string) (allGreet
 			log.Info("no time left for signals, checking one more time\n")
 		}
 
-		//printGreetings(greetings)
-		//log.Info("Awaiting for " + timeout.String() + "\n")
 		gotSignalBeforeTimeout, err := workflow.AwaitWithTimeout(ctx, timeout, func() bool {
 			return len(unprocessedGreetings) > 0 || ExitRequested
 		})
-		//printGreetings(greetings)
 
 		// timeout
 		if len(unprocessedGreetings) == 0 {
 			log.Info("Into final processing, signal received? " + strconv.FormatBool(gotSignalBeforeTimeout)  + ", exit requested: " + strconv.FormatBool(ExitRequested) +"\n")
 
 			// do final processing
-			//printGreetings(greetings)
 			queryResult = "processing signals; count: " + fmt.Sprint(len(greetings))
 			allGreetings = ""
-			// get token - retryable like normal, it's failure-prone and idempotent
+			
 			err := workflow.ExecuteActivity(ctx, ComposeGreeting, greetings).Get(ctx, &allGreetings)
 			if err != nil {
 				log.Error("ComposeGreeting activity failed.", "Error", err)
@@ -224,7 +196,7 @@ func AccumulateSignalsWorkflow(ctx workflow.Context, bucketKey string) (allGreet
 			queryResult = "processing a signal"
 			ug := unprocessedGreetings[0]
 			unprocessedGreetings = unprocessedGreetings[1:] 
-			//fmt.Printf("greetings slice info for unprocessedGreetings after taking out ug: len=%d cap=%d %v\n", len(unprocessedGreetings), cap(unprocessedGreetings), unprocessedGreetings)
+			
 			if ug.Bucket != bucketKey {
 				log.Warn("Wrong bucket, something is wrong with your signal processing. WF Bucket: [" + bucketKey +"], greeting bucket: [" + ug.Bucket + "]");
 			} else if(uniqueGreetingKeysMap[ug.GreetingKey]) {
@@ -232,11 +204,10 @@ func AccumulateSignalsWorkflow(ctx workflow.Context, bucketKey string) (allGreet
 			} else {
 				uniqueGreetingKeysMap[ug.GreetingKey] = true
 				greetings = append(greetings, ug)
-				//log.Info("Adding Greeting. Key: [" + ug.GreetingKey +"], Text: [" + ug.GreetingText + "]");
 			}
 		}
 		
-		//a = AccumulateGreeting{} 
+		// currently we don't continue as new, we just let workflows end, I think that's fine for this kind of test
 	}
 
 	return a.GreetingText, nil

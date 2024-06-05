@@ -22,16 +22,6 @@ export TEMPORAL_SERVER_NAME=
 
 export TEMPORAL_INSECURE_SKIP_VERIFY=false
 
-# App temporal taskqueue names
-export TRANSFER_MONEY_TASK_QUEUE="go-moneytransfer"
-export STANDING_ORDERS_TASK_QUEUE="StandingOrders"
-export SCHEDULE_WF_TASK_QUEUE="ScheduleWFTQ"
-
-# timer for transfer table to be checked (seconds)
-export CHECK_TRANSFER_TASKQUEUE_TIMER=20
-# timer for demo delay between Withdraw and Deposit Activities
-export DELAY_TIMER_BETWEEN_WITHDRAW_DEPOSIT=15
-
 # payload data encryption
 export ENCRYPT_PAYLOAD=false
 export DATACONVERTER_ENCRYPTION_KEY_ID=mysecretkey
@@ -39,9 +29,5 @@ export DATACONVERTER_ENCRYPTION_KEY_ID=mysecretkey
 # Set to enable debug logger logging
 export LOG_LEVEL=debug
 
-# local mysql backend db connection
-export MYSQL_HOST=localhost
-export MYSQL_DATABASE=dataentry
-export MYSQL_USER=mysqluser
-export MYSQL_PASSWORD=mysqlpw
+
 

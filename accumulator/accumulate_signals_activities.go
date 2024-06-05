@@ -7,7 +7,7 @@ import (
 	"go.temporal.io/sdk/activity"
 )
 
-// this activity will process all of the signals together
+// this activity processes all of the signals together
 func ComposeGreeting(ctx context.Context, s []AccumulateGreeting) (string, error) {
 	log := activity.GetLogger(ctx)
 	log.Info("Compose Greetings Activity started. ")
@@ -25,9 +25,4 @@ func ComposeGreeting(ctx context.Context, s []AccumulateGreeting) (string, error
 	words += "!"
 	return words, nil
 	
-	/*       List<String> greetingList =
-	      greetings.stream().map(u -> u.greetingText).collect(Collectors.toList());
-	  return "Hello (" + greetingList.size() + ") robots: " + greetingList + "!";
-	}
-	*/
 }
